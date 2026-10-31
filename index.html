@@ -10,5 +10,24 @@
   <h1>SMART LEAVE</h1>
   <p>ระบบบริหารจัดการการลา</p>
   <p>โรงเรียนมัธยมวัดเขาสุกิม</p>
+  <script>
+  async function startLIFF() {
+    try {
+      await liff.init({
+        liffId: "2012308315-czJfVEE0"
+      });
+
+      if (liff.isLoggedIn()) {
+        console.log("LINE Login สำเร็จ");
+      } else {
+        console.log("ยังไม่ได้เข้าสู่ระบบ LINE");
+      }
+    } catch (error) {
+      console.error("LIFF Error:", error);
+    }
+  }
+
+  startLIFF();
+</script>
 </body>
 </html>
