@@ -62,6 +62,13 @@ console.log(
   }
 
   startLIFF();
+checkSmartLeaveApiHealth().then(function(online) {
+  console.log(
+    online
+      ? "SMART LEAVE API: CONNECTED"
+      : "SMART LEAVE API: CONNECTION FAILED"
+  );
+});
 </script>
 </body>
 </html>
