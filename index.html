@@ -15,6 +15,26 @@
 const SMART_LEAVE_API_URL =
   "https://smart-leave-api.mkhrd09.workers.dev";
 
+async function checkSmartLeaveApiHealth() {
+  try {
+    const response = await fetch(
+      SMART_LEAVE_API_URL + "/health",
+      { method: "GET", cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+
+    return data.success === true &&
+      data.api === "ONLINE";
+  } catch (error) {
+    return false;
+  }
+}
+
   async function startLIFF() {
     try {
       await liff.init({
