@@ -12,6 +12,9 @@
   <p>โรงเรียนมัธยมวัดเขาสุกิม</p>
   <p id="loginStatus">กำลังตรวจสอบสถานะ LINE...</p>
   <script>
+const SMART_LEAVE_API_URL =
+  "https://smart-leave-api.mkhrd09.workers.dev";
+
   async function startLIFF() {
     try {
       await liff.init({
