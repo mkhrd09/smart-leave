@@ -20,6 +20,13 @@
 
       if (liff.isLoggedIn()) {
         console.log("LINE Login สำเร็จ");
+        const idToken = liff.getIDToken();
+
+console.log(
+  idToken
+    ? "พบ LINE ID Token"
+    : "ไม่พบ LINE ID Token"
+);
         document.getElementById("loginStatus").textContent = "เข้าสู่ระบบ LINE สำเร็จ";
       } else {
         console.log("ยังไม่ได้เข้าสู่ระบบ LINE");
