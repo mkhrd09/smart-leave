@@ -10,6 +10,7 @@
   <h1>SMART LEAVE</h1>
   <p>ระบบบริหารจัดการการลา</p>
   <p>โรงเรียนมัธยมวัดเขาสุกิม</p>
+  <p id="loginStatus">กำลังตรวจสอบสถานะ LINE...</p>
   <script>
   async function startLIFF() {
     try {
@@ -19,8 +20,10 @@
 
       if (liff.isLoggedIn()) {
         console.log("LINE Login สำเร็จ");
+        document.getElementById("loginStatus").textContent = "เข้าสู่ระบบ LINE สำเร็จ";
       } else {
         console.log("ยังไม่ได้เข้าสู่ระบบ LINE");
+        document.getElementById("loginStatus").textContent = "ยังไม่ได้เข้าสู่ระบบ LINE";
       }
     } catch (error) {
       console.error("LIFF Error:", error);
