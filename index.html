@@ -1,74 +1,41 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SMART LEAVE</title>
+<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SMART LEAVE | โรงเรียนมัธยมวัดเขาสุกิม</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-</head>
-<body>
-  <h1>SMART LEAVE</h1>
-  <p>ระบบบริหารจัดการการลา</p>
-  <p>โรงเรียนมัธยมวัดเขาสุกิม</p>
-  <p id="loginStatus">กำลังตรวจสอบสถานะ LINE...</p>
-  <script>
-const SMART_LEAVE_API_URL =
-  "https://smart-leave-api.mkhrd09.workers.dev";
-
-async function checkSmartLeaveApiHealth() {
-  try {
-    const response = await fetch(
-      SMART_LEAVE_API_URL + "/health",
-      { method: "GET", cache: "no-store" }
-    );
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const data = await response.json();
-
-    return data.success === true &&
-      data.api === "ONLINE";
-  } catch (error) {
-    return false;
-  }
+<style>
+:root{font-family:system-ui,'Tahoma',sans-serif;color:#1e293b;background:#f3f6fb}*{box-sizing:border-box}body{margin:0}header{background:#142d4e;color:white;padding:22px max(20px,calc((100vw - 1000px)/2))}h1{margin:0;font-size:25px}header p{margin:6px 0 0;color:#dce6f2}main{max-width:1000px;margin:24px auto;padding:0 16px}.panel{background:white;border:1px solid #dce4ef;border-radius:15px;padding:22px;margin:16px 0;box-shadow:0 3px 12px #0f172a08}h2{font-size:19px;margin:0 0 16px}label{display:block;font-size:14px;margin:10px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}textarea{min-height:85px}button{border:0;border-radius:8px;padding:11px 16px;background:#173b64;color:white;font:inherit;cursor:pointer;margin:5px 5px 5px 0}button.secondary{background:#64748b}button.danger{background:#9f3140}button:disabled{opacity:.5;cursor:not-allowed}.muted{color:#64748b}.hidden{display:none}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{background:#eff5fb;padding:15px;border-radius:10px}.metric b{display:block;font-size:25px}.item{border-top:1px solid #e2e8f0;padding:13px 0;overflow-wrap:anywhere}.item:first-child{border:0}.status{padding:10px;border-radius:8px;background:#eaf2fa;margin:10px 0}.error{background:#fef0f0;color:#9f1239}footer{text-align:center;color:#64748b;padding:20px;font-size:12px}
+</style></head><body>
+<header><h1>SMART LEAVE</h1><p>ระบบบริหารจัดการการลา • โรงเรียนมัธยมวัดเขาสุกิม</p></header>
+<main><div id="message" class="status">กำลังตรวจสอบ LINE Login...</div>
+<section id="guest" class="panel hidden"><h2>ลงทะเบียนบุคลากร</h2><p class="muted">กรุณาระบุรหัสบุคลากรเพื่อขออนุมัติการเชื่อมบัญชี LINE</p><label>รหัสบุคลากร</label><input id="staffId" maxlength="30" placeholder="เช่น T005"><button id="registerBtn">ส่งคำขอลงทะเบียน</button></section>
+<div id="app" class="hidden"><section class="panel"><h2 id="welcome">ยินดีต้อนรับ</h2><div id="metrics" class="grid"></div><button id="refreshBtn" class="secondary">รีเฟรชข้อมูล</button></section>
+<section class="panel"><h2>ยื่นใบลา</h2><form id="leaveForm"><label>ประเภทการลา</label><select name="leaveType" required><option value="ป่วย">ลาป่วย</option><option value="กิจ">ลากิจ</option><option value="คลอดบุตร">ลาคลอดบุตร</option></select><div class="grid"><div><label>วันที่เริ่มลา</label><input type="date" name="startDate" required></div><div><label>วันที่สิ้นสุด</label><input type="date" name="endDate" required></div></div><label>เหตุผลการลา</label><textarea name="reason" maxlength="1000" required></textarea><p class="muted">จำนวนวันจะคำนวณที่เซิร์ฟเวอร์ (ขณะนี้ใช้วันปฏิทิน ต้องยืนยันระเบียบการนับวันลาก่อนใช้งานจริง)</p><button type="submit">ส่งใบลา</button></form></section>
+<section class="panel"><h2>ประวัติการลาของฉัน</h2><div id="mine" class="muted">กำลังโหลด...</div></section>
+<section id="directorPanel" class="panel hidden"><h2>รายการรอผู้อำนวยการพิจารณา</h2><div id="pending"></div></section>
+<section id="adminPanel" class="panel hidden"><h2>คำขอลงทะเบียน LINE ที่รอยืนยัน</h2><div id="registrations"></div></section></div></main>
+<footer>© 2026 SMART LEAVE — Matthayom Wat Khaosukim School</footer>
+<script>
+const API='https://smart-leave-api.mkhrd09.workers.dev/api';
+const LIFF_ID='2012308315-czJfVEE0';
+let idToken='',profile=null,busy=false;
+const $=id=>document.getElementById(id);
+function show(id,yes=true){$(id).classList.toggle('hidden',!yes)}
+function message(text,error=false){$('message').textContent=text;$('message').classList.toggle('error',error)}
+function el(tag,text){const node=document.createElement(tag);if(text!==undefined)node.textContent=String(text);return node}
+async function api(action,fields={}){
+ const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,idToken,...fields})});
+ const data=await res.json();if(!res.ok||!data.success)throw Error(data.message||'ระบบไม่สามารถดำเนินการได้');return data;
 }
-
-  async function startLIFF() {
-    try {
-      await liff.init({
-        liffId: "2012308315-czJfVEE0"
-      });
-
-      if (liff.isLoggedIn()) {
-        console.log("LINE Login สำเร็จ");
-        const idToken = liff.getIDToken();
-        document.getElementById("loginStatus").textContent =
-  idToken ? "LINE ID Token พร้อมใช้งาน" : "ไม่พบ LINE ID Token";
-
-console.log(
-  idToken
-    ? "พบ LINE ID Token"
-    : "ไม่พบ LINE ID Token"
-);
-      } else {
-        console.log("ยังไม่ได้เข้าสู่ระบบ LINE");
-        document.getElementById("loginStatus").textContent = "ยังไม่ได้เข้าสู่ระบบ LINE";
-      }
-    } catch (error) {
-      console.error("LIFF Error:", error);
-    }
-  }
-
-  startLIFF();
-checkSmartLeaveApiHealth().then(function(online) {
-  console.log(
-    online
-      ? "SMART LEAVE API: CONNECTED"
-      : "SMART LEAVE API: CONNECTION FAILED"
-  );
-});
-</script>
-</body>
-</html>
+function item(container,lines){const div=el('div');div.className='item';lines.forEach(x=>div.append(el('div',x)));container.append(div);return div}
+async function load(){
+ const [stats,mine]=await Promise.all([api('dashboard'),api('mine')]);
+ $('metrics').replaceChildren();[['ใบลาทั้งหมด',stats.total],['รออนุมัติ',stats.pending],['อนุมัติ',stats.approved],['ไม่อนุมัติ',stats.rejected]].forEach(([label,value])=>{const d=el('div');d.className='metric';d.append(el('span',label),el('b',value));$('metrics').append(d)});
+ $('mine').replaceChildren();if(!mine.items.length)$('mine').append(el('p','ยังไม่มีประวัติการลา'));
+ mine.items.forEach(x=>item($('mine'),[`${x.leaveId} • ${x.leaveType} • ${x.status}`,`${x.startDate} ถึง ${x.endDate} (${x.totalDays} วัน)`,x.reason]));
+ if(profile.director){const data=await api('pending');$('pending').replaceChildren();if(!data.items.length)$('pending').append(el('p','ไม่มีใบลารอพิจารณา'));data.items.forEach(x=>{const d=item($('pending'),[`${x.leaveId} — ${x.fullName}`,`${x.leaveType} ${x.startDate} ถึง ${x.endDate}`,x.reason]);const note=el('input');note.placeholder='หมายเหตุ (ไม่บังคับ)';d.append(note);[['อนุมัติ','APPROVED'],['ไม่อนุมัติ','REJECTED']].forEach(([label,action])=>{const b=el('button',label);if(action==='REJECTED')b.className='danger';b.onclick=async()=>{if(!confirm(`ยืนยันการ${label}ใบลา ${x.leaveId}?`))return;await act(async()=>api('decide',{data:{leaveId:x.leaveId,action,comment:note.value}}))};d.append(b)})})}
+ if(profile.role==='SUPER_ADMIN'){const data=await api('registrations');$('registrations').replaceChildren();if(!data.items.length)$('registrations').append(el('p','ไม่มีคำขอลงทะเบียน'));data.items.forEach(x=>{const d=item($('registrations'),[`${x.staffId} — ${x.fullName}`,x.displayName]);[['ยืนยัน',true],['ปฏิเสธ',false]].forEach(([label,approve])=>{const b=el('button',label);if(!approve)b.className='danger';b.onclick=async()=>{if(!confirm(`${label}บัญชี ${x.staffId}?`))return;await act(async()=>api('reviewRegistration',{staffId:x.staffId,approve}))};d.append(b)})})}
+}
+async function act(fn){if(busy)return;busy=true;try{await fn();message('บันทึกข้อมูลสำเร็จ');if(profile)await load()}catch(e){message(e.message,true)}finally{busy=false}}
+$('registerBtn').onclick=()=>act(()=>api('register',{staffId:$('staffId').value.trim()}));
+$('refreshBtn').onclick=()=>act(async()=>{});
+$('leaveForm').onsubmit=e=>{e.preventDefault();const form=new FormData(e.currentTarget);const data=Object.fromEntries(form.entries());act(async()=>{await api('submit',{data});$('leaveForm').reset()})};
+(async()=>{try{await liff.init({liffId:LIFF_ID});if(!liff.isLoggedIn()){message('กรุณาเข้าสู่ระบบ LINE');const b=el('button','เข้าสู่ระบบ LINE');b.onclick=()=>liff.login({redirectUri:location.href});$('message').after(b);return}idToken=liff.getIDToken();if(!idToken)throw Error('ไม่พบ LINE ID Token กรุณาเข้าสู่ระบบใหม่');try{profile=await api('profile');show('app');show('directorPanel',profile.director);show('adminPanel',profile.role==='SUPER_ADMIN');$('welcome').textContent=`ยินดีต้อนรับ ${profile.fullName} (${profile.staffId})`;message('เข้าสู่ระบบสำเร็จ');await load()}catch(e){if(/ไม่พบบัญชี LINE|ยังไม่ได้รับการยืนยัน/.test(e.message)){show('guest');message('บัญชี LINE ยังไม่ผ่านการยืนยัน กรุณาลงทะเบียนหรือรอเจ้าหน้าที่',false)}else throw e}}catch(e){message(e.message,true)}})();
+</script></body></html>
